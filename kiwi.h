@@ -101,14 +101,14 @@ void kl_fatal(kl_pair *kv, ...);
 ** Log record
 */
 typedef struct {
-	kl_pair *array;
-	size_t   used;
-	size_t   size;
+	kl_pair **array;
+	size_t    used;
+	size_t    size;
 } record;
 
-void init_record(record *a, size_t initial_size);
-void append_record(record *a, kl_pair pair);
-void free_record(record *a);
+void record_init(record *a, size_t initial_size);
+void record_append(record *a, kl_pair *pair);
+void record_free(record *a);
 
 /*
 ** XXX Sink interface

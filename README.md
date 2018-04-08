@@ -1,4 +1,4 @@
-# KL ak Kiwi Logger
+# Kiwi Logger aka KL
 
 This is logging library for so called structured logging. The log
 records consist of pairs of keys and values. See logfmt for ideas
@@ -22,3 +22,9 @@ In brief library in current state offers:
 
 - more available conditions for filtering
 - context for the log records like in Go Kiwi
+
+# Rights
+
+This library is free software; you can redistribute it and/or modify
+it under the terms of the BSD license. See [LICENSE](LICENSE) for
+details.
