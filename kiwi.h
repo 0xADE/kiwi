@@ -45,12 +45,13 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdarg.h>
 
 /** Logger interface **
  */
 enum kl_pairval {KL_PAIR_STRING, KL_PAIR_INT, KL_PAIR_FLOAT, KL_PAIR_DOUBLE, KL_PAIR_TIME};
-typedef struct kl_pair {
+typedef struct {
 	enum kl_pairval type;
 	char *          key;
 	char *          sval;
@@ -58,7 +59,6 @@ typedef struct kl_pair {
 	float           fval;
 	double          dval;
 } kl_pair;
-
 
 /* For avoid varargs limitations each function that allows variadic
  * parameters redefined with NULL at the end. You should use functions
@@ -86,6 +86,7 @@ kl_pair *kl_d(char *key, double val);
  * Second argument is time format. Default format is %H:%M:%S.
  */
 void kl_with_ts(char *key, ...);
+void kl_without_ts();
 
 /* Emulate levels for compatibility with traditional loggers.
  */
@@ -106,19 +107,44 @@ typedef struct {
 	size_t    size;
 } record;
 
-void record_init(record *a, size_t initial_size);
-void record_append(record *a, kl_pair *pair);
-void record_free(record *a);
+/* Internal functions. */
+void kl_record_init(record *a, size_t initial_size);
+void kl_record_append(record *a, kl_pair *pair);
+void kl_record_free(record *a);
 
 /*
 ** Sink interface
 */
-void    to_sink(record *rec);
+enum match_type {FILTER_MATCH_KEY, FILTER_RANGE_INT};
+
+typedef struct {
+	enum match_type type;
+	char *          name;
+	char *          val;
+	int             from;
+	int             to;
+} filter;
+
+typedef struct {
+	FILE *  fd;
+	filter *filter_set;
+} sink;
+
+
+sink *kl_create_sink(char *fname, ...);
+void kl_pause_sink(sink *s);
+void kl_log_everything(sink *s);
+void kl_log_with(sink *s, ...);
+void kl_log_without(sink *s, ...);
+int kl_close_sink(sink *s);
+
+/* Internal function. */
+void kl_sink_this(record *rec);
 
 /*
 ** XXX Sink interface
    sink* create_sink(FILE* fd, filter ...);
-   enum match_type {FILTER_MATCH_KEY, FILTER_RANGE_INT};
+
 
    sink_filters(filter ...);
 

@@ -35,8 +35,16 @@
 #include <stdio.h>
 #include "kiwi.h"
 
+sink *create_sink (char *fname, ...){
+}
+
+// Reset all filters. Starts logging everything to this sink.
+void sink_everything(sink *s) {
+}
+
+
 // XXX remove it
-static void add_to_record(kl_pair *kv) {
+static void add_to_record (kl_pair *kv){
 	// XXX формировать запись, учесть доп форматы (JSON etc)
 	switch (kv->type) {
 	case KL_PAIR_STRING:
@@ -48,15 +56,27 @@ static void add_to_record(kl_pair *kv) {
 	case KL_PAIR_FLOAT:
 		printf("%s FLOAT %f\n", kv->key, kv->fval);
 		break;
+	case KL_PAIR_DOUBLE:
+		printf("%s DOUBLE %f\n", kv->key, kv->dval);
+		break;
 	case KL_PAIR_TIME:
 		printf("%s TIME %s\n", kv->key, kv->sval);
 		break;
 	}
 }
 
-void    to_sink(record *rec) {
+void kl_sink_this(record *rec) {
+	// создается копия со списком синков (1)
+	// создается пустой массив под активные выходы (2)
 	for (int i = 0; i<rec->used; i++) {
-		printf("%i ", i);
-		add_to_record(rec->array[i]);
+		// прогон по фильтрам, в какой синк подходит, он переносится из 1 в 2
+		// далее проверка идет по 1 уже без учета отфильтрованных (уже активированных) синков
+		// если попадает в запрещающий фильтр, то синк выкидывается из 1 и 2
+
+		printf("%i ", i); // XXX
+		add_to_record(rec->array[i]); // XXX debug time
+
 	}
+	// если список активных синков не пустой, подготовка строки из записи
+	// цикл по активным синкам, выдача
 }

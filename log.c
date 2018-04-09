@@ -36,7 +36,7 @@
 #include <time.h>
 #include "kiwi.h"
 
-#define RECORD_INIT_SIZE 5
+#define RECORD_INIT_SIZE 4
 
 enum levels {LEVEL_TRACE, LEVEL_DEBUG, LEVEL_INFO, LEVEL_WARN, LEVEL_ERROR, LEVEL_FATAL};
 static const char *level_names[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
@@ -55,34 +55,37 @@ void kl_with_ts(char *key, ...)
 	if (fmt!=NULL) ts_fmt = fmt;
 }
 
+void kl_without_ts() {
+	ts_key = NULL;
+}
 
-static void ts_to_record(record *rec) {
+static void record_stamp(record *rec) {
 	if (ts_key==NULL) return;
 	time_t     t  = time(NULL);
 	struct tm *lt = localtime(&t);
 	char       buf[16];
 	buf[strftime(buf, sizeof(buf), ts_fmt, lt)] = '\0';
 	kl_pair pair = {.type = KL_PAIR_TIME, .key = ts_key, .sval = buf};
-	record_append(rec, &pair);
+	kl_record_append(rec, &pair);
 }
 
 __attribute__((sentinel))
 void kl_log_varg(kl_pair *kv, ...)
 {
 	record rec;
-	record_init(&rec, RECORD_INIT_SIZE);
-	ts_to_record(&rec);
+	kl_record_init(&rec, RECORD_INIT_SIZE);
+	record_stamp(&rec);
 	va_list narg;
 	va_start(narg, kv);
 	kl_pair *pair = kv;
 	do
 	{
-		record_append(&rec, pair);
+		kl_record_append(&rec, pair);
 		pair = va_arg(narg, kl_pair *);
 	} while (pair!=NULL);
 	va_end(narg);
-	to_sink(&rec);
-	record_free(&rec);
+	kl_sink_this(&rec);
+	kl_record_free(&rec);
 }
 
 /* kl_logs() allows use pairs with both string key and value without
@@ -92,8 +95,8 @@ void kl_log_varg(kl_pair *kv, ...)
 __attribute__((sentinel))
 void kl_logs_varg(char *key, char *val, ...) {
 	record rec;
-	record_init(&rec, RECORD_INIT_SIZE);
-	ts_to_record(&rec);
+	kl_record_init(&rec, RECORD_INIT_SIZE);
+	record_stamp(&rec);
 	va_list narg;
 	va_start(narg, val);
 	kl_pair pair  = {.type = KL_PAIR_STRING, .key = key, .sval = val};
@@ -101,7 +104,7 @@ void kl_logs_varg(char *key, char *val, ...) {
 	char *  next;
 	do
 	{
-		record_append(&rec, &pair);
+		kl_record_append(&rec, &pair);
 		next = va_arg(narg, char *);
 		if (count++%2==0) {
 			/* Even argument is key. */
@@ -115,8 +118,8 @@ void kl_logs_varg(char *key, char *val, ...) {
 		};
 	} while (next!=NULL);
 	va_end(narg);
-	to_sink(&rec);
-	record_free(&rec);
+	kl_sink_this(&rec);
+	kl_record_free(&rec);
 }
 
 /* Helper that accepts value of the pair as string (char*). This
