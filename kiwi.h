@@ -68,19 +68,19 @@ void kl_log_varg(kl_pair *kv, ...); // use kl_log() instead!
 void kl_logs_varg(char *key, char *val, ...); // use kl_logs() instead!
 
 #if __STRICT_ANSI__ // by recipe from https://snai.pe/c/preprocessor/varargs/
- #define kl_log(pair, ...) kl_log_varg(pair, __VA_ARGS__, (kl_pair*)NULL)
- #define kl_logs(k, v, ...) kl_logs_varg(k, v, __VA_ARGS__, (char*)NULL)
+ #define kl_log(pair, ...) kl_log_varg(pair, __VA_ARGS__, (kl_pair *)NULL)
+ #define kl_logs(k, v, ...) kl_logs_varg(k, v, __VA_ARGS__, (char *)NULL)
 #else
- #define kl_log(pair, pairs ...) kl_log_varg(pair, ## pairs, (kl_pair*)NULL)
- #define kl_logs(k, v, pairs ...) kl_logs_varg(k, v, ## pairs, (char*)NULL)
+ #define kl_log(pair, pairs ...) kl_log_varg(pair, ## pairs, (kl_pair *)NULL)
+ #define kl_logs(k, v, pairs ...) kl_logs_varg(k, v, ## pairs, (char *)NULL)
 #endif
 
 /* Helpers for adding key-value pairs to the log record.
  */
-kl_pair*kl_s(char *key, char *val);
-kl_pair*kl_i(char *key, int val);
-kl_pair*kl_f(char *key, float val);
-kl_pair*kl_d(char *key, double val);
+kl_pair *kl_s(char *key, char *val);
+kl_pair *kl_i(char *key, int val);
+kl_pair *kl_f(char *key, float val);
+kl_pair *kl_d(char *key, double val);
 
 /* Setup timestamp output as additional context for the log records.
  * Second argument is time format. Default format is %H:%M:%S.
@@ -109,6 +109,11 @@ typedef struct {
 void record_init(record *a, size_t initial_size);
 void record_append(record *a, kl_pair *pair);
 void record_free(record *a);
+
+/*
+** Sink interface
+*/
+void    to_sink(record *rec);
 
 /*
 ** XXX Sink interface

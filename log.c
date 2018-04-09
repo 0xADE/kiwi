@@ -50,29 +50,11 @@ void kl_with_ts(char *key, ...)
 	ts_key = key;
 	va_list arg;
 	va_start(arg, key);
-	char *fmt = va_arg(arg, char*);
+	char *fmt = va_arg(arg, char *);
 	va_end(arg);
 	if (fmt!=NULL) ts_fmt = fmt;
 }
 
-// XXX remove it
-static void add_to_record(kl_pair *kv, record *rec) {
-	// XXX формировать запись, учесть доп форматы (JSON etc)
-	switch (kv->type) {
-	case KL_PAIR_STRING:
-		printf("%s STR %s\n", kv->key, kv->sval);
-		break;
-	case KL_PAIR_INT:
-		printf("%s INT %i\n", kv->key, kv->ival);
-		break;
-	case KL_PAIR_FLOAT:
-		printf("%s FLOAT %f\n", kv->key, kv->fval);
-		break;
-	case KL_PAIR_TIME:
-		printf("%s TIME %s\n", kv->key, kv->sval);
-		break;
-	}
-}
 
 static void ts_to_record(record *rec) {
 	if (ts_key==NULL) return;
@@ -81,8 +63,7 @@ static void ts_to_record(record *rec) {
 	char       buf[16];
 	buf[strftime(buf, sizeof(buf), ts_fmt, lt)] = '\0';
 	kl_pair pair = {.type = KL_PAIR_TIME, .key = ts_key, .sval = buf};
-	add_to_record(&pair, rec); // XXX
-	//	record_append(rec, &pair);
+	record_append(rec, &pair);
 }
 
 __attribute__((sentinel))
@@ -96,11 +77,11 @@ void kl_log_varg(kl_pair *kv, ...)
 	kl_pair *pair = kv;
 	do
 	{
-		add_to_record(pair, &rec); // XXX
-		//		record_append(rec, pair);
-		pair = va_arg(narg, kl_pair*);
+		record_append(&rec, pair);
+		pair = va_arg(narg, kl_pair *);
 	} while (pair!=NULL);
 	va_end(narg);
+	to_sink(&rec);
 	record_free(&rec);
 }
 
@@ -120,9 +101,8 @@ void kl_logs_varg(char *key, char *val, ...) {
 	char *  next;
 	do
 	{
-		add_to_record(&pair, &rec); // XXX
-		//		record_append(rec, &pair);
-		next = va_arg(narg, char*);
+		record_append(&rec, &pair);
+		next = va_arg(narg, char *);
 		if (count++%2==0) {
 			/* Even argument is key. */
 			key = next;
@@ -135,12 +115,14 @@ void kl_logs_varg(char *key, char *val, ...) {
 		};
 	} while (next!=NULL);
 	va_end(narg);
+	to_sink(&rec);
 	record_free(&rec);
 }
 
-/* Helper that accepts value of the pair as string (char*).
+/* Helper that accepts value of the pair as string (char*). This
+   function allocates memory in the heap so it should be freed later.
  */
-kl_pair*kl_s(char *key, char *val) {
+kl_pair *kl_s(char *key, char *val) {
 	kl_pair *pair;
 	pair       = malloc(sizeof(kl_pair));
 	pair->type = KL_PAIR_STRING;
@@ -149,9 +131,10 @@ kl_pair*kl_s(char *key, char *val) {
 	return pair;
 }
 
-/* Helper that accepts value of the pair as integer.
+/* Helper that accepts value of the pair as integer. This function
+   allocates memory in the heap so it should be freed later.
  */
-kl_pair*kl_i(char *key, int val) {
+kl_pair *kl_i(char *key, int val) {
 	kl_pair *pair;
 	pair       = malloc(sizeof(kl_pair));
 	pair->type = KL_PAIR_INT;
@@ -160,9 +143,10 @@ kl_pair*kl_i(char *key, int val) {
 	return pair;
 }
 
-/* Helper that accepts value of the pair as float.
+/* Helper that accepts value of the pair as float. This function
+   allocates memory in the heap so it should be freed later.
  */
-kl_pair*kl_f(char *key, float val) {
+kl_pair *kl_f(char *key, float val) {
 	kl_pair *pair;
 	pair       = malloc(sizeof(kl_pair));
 	pair->type = KL_PAIR_FLOAT;
@@ -171,9 +155,10 @@ kl_pair*kl_f(char *key, float val) {
 	return pair;
 }
 
-/* Helper that accepts value of the pair as double.
+/* Helper that accepts value of the pair as double. This function
+   allocates memory in the heap so it should be freed later.
  */
-kl_pair*kl_d(char *key, double val) {
+kl_pair *kl_d(char *key, double val) {
 	kl_pair *pair;
 	pair       = malloc(sizeof(kl_pair));
 	pair->type = KL_PAIR_DOUBLE;

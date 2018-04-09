@@ -31,3 +31,32 @@
 
    ॐ तारे तुत्तारे तुरे स्व
  */
+
+#include <stdio.h>
+#include "kiwi.h"
+
+// XXX remove it
+static void add_to_record(kl_pair *kv) {
+	// XXX формировать запись, учесть доп форматы (JSON etc)
+	switch (kv->type) {
+	case KL_PAIR_STRING:
+		printf("%s STR %s\n", kv->key, kv->sval);
+		break;
+	case KL_PAIR_INT:
+		printf("%s INT %i\n", kv->key, kv->ival);
+		break;
+	case KL_PAIR_FLOAT:
+		printf("%s FLOAT %f\n", kv->key, kv->fval);
+		break;
+	case KL_PAIR_TIME:
+		printf("%s TIME %s\n", kv->key, kv->sval);
+		break;
+	}
+}
+
+void    to_sink(record *rec) {
+	for (int i = 0; i<rec->used; i++) {
+		printf("%i ", i);
+		add_to_record(rec->array[i]);
+	}
+}

@@ -35,17 +35,15 @@
 #include "kiwi.h"
 
 void record_init(record *a, size_t initial_size) {
-	a->array = (kl_pair**)malloc(initial_size * sizeof(kl_pair));
+	a->array = (kl_pair **)malloc(initial_size * sizeof(kl_pair));
 	a->used  = 0;
 	a->size  = initial_size;
 }
 
 void record_append(record *a, kl_pair *pair) {
-	// a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
-	// Therefore a->used can go up to a->size
 	if (a->used == a->size) {
 		a->size *= 2;
-		a->array = (kl_pair**)realloc(a->array, a->size * sizeof(kl_pair*));
+		a->array = (kl_pair **)realloc(a->array, a->size * sizeof(kl_pair *));
 	}
 	a->array[a->used++] = pair;
 }
