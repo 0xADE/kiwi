@@ -35,11 +35,11 @@
 #include <stdio.h>
 #include "kiwi.h"
 
-sink *create_sink (char *fname, ...){
+sink *setup_sink (char *fname, ...){
 }
 
 // Reset all filters. Starts logging everything to this sink.
-void sink_everything(sink *s) {
+void kl_sink_everything(sink *s) {
 }
 
 
@@ -65,18 +65,19 @@ static void add_to_record (kl_pair *kv){
 	}
 }
 
-void kl_sink_this(record *rec) {
+void kl__sink_this(record *rec) {
 	// создается копия со списком синков (1)
 	// создается пустой массив под активные выходы (2)
 	for (int i = 0; i<rec->used; i++) {
 		// прогон по фильтрам, в какой синк подходит, он переносится из 1 в 2
 		// далее проверка идет по 1 уже без учета отфильтрованных (уже активированных) синков
-		// если попадает в запрещающий фильтр, то синк выкидывается из 1 и 2
+		// если попадет в запрещающий фильтр, то синк выкидывается из 1 и 2
 
 		printf("%i ", i); // XXX
 		add_to_record(rec->array[i]); // XXX debug time
 
 	}
+
 	// если список активных синков не пустой, подготовка строки из записи
 	// цикл по активным синкам, выдача
 }

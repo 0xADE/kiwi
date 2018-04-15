@@ -130,37 +130,47 @@ typedef struct {
 	filter *filter_set;
 } sink;
 
+typedef struct {
+	int (*atstart)(sink *, record *);
+	int (*format)(sink *, record *);
+	int (*atfinish)(sink *, record *);
+} format;
 
+typedef struct {
+	filter *cond;
+	format *fmt;
+	time_t *at;
+} option;
+
+/* Create a new sink. By default the sink will pass everything until
+ * the filters applied. Arbitrary number of options could be passed
+ * for modifying default sink settings. It could be filtering options
+ * or reference to alternative formatter (all options are references
+ * to `option` type instances. */
 sink *kl_create_sink(char *fname, ...);
-void kl_pause_sink(sink *s);
-void kl_log_everything(sink *s);
-void kl_log_with(sink *s, ...);
-void kl_log_without(sink *s, ...);
+
+/* Change sink settings by adding or removing the filters or changing
+ * the output format. Arbitrary number of options could be passed for
+ * modifying default sink settings. It could be filtering options or
+ * reference to alternative formatter (all options are references to
+ * `option` type instances. */
+void kl_modify_sink(sink *s, ...);
+
+/* Reset all the filters for the sink. By default the sink will output
+ * all passed records. Filtering options will not reset. */
+void kl_sink_everything(sink *s);
+
+/* Closes the sink and underlaying file. Return 0 on success or error code. */
 int kl_close_sink(sink *s);
 
 /* Internal function. */
-void kl_sink_this(record *rec);
+void kl__sink_this(record *rec);
 
 /*
 ** XXX Sink interface
-   sink* create_sink(FILE* fd, filter ...);
-
-
-   sink_filters(filter ...);
-
-   // make it static?
-   typedef struct filter {
-        match_type type;
-        char*      name;
-        char*      val;
-        int        from;
-        int        to;
-   }
-
-   // make it static?
-   typedef struct sink {
-        filter;
-   } sink;
+   filter must_key(char* key);
+   filter must_sval(char* key, char* val);
+   filter must_irange(char* key, int from, int to);
 
    filter with_key(char* key);
    filter without_key(char* key);
@@ -168,6 +178,4 @@ void kl_sink_this(record *rec);
    filter without_sval(char* key, char* sval);
    filter with_irange(char* key, int from, int to);
    filter without_irange(char* key, int from, int to);
-
-   void remove_sink(sink* s);
 */

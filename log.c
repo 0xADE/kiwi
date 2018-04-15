@@ -55,11 +55,13 @@ void kl_with_ts(char *key, ...)
 	if (fmt!=NULL) ts_fmt = fmt;
 }
 
-void kl_without_ts() {
+void kl_without_ts()
+{
 	ts_key = NULL;
 }
 
-static void record_stamp(record *rec) {
+static void record_stamp(record *rec)
+{
 	if (ts_key==NULL) return;
 	time_t     t  = time(NULL);
 	struct tm *lt = localtime(&t);
@@ -84,7 +86,7 @@ void kl_log_varg(kl_pair *kv, ...)
 		pair = va_arg(narg, kl_pair *);
 	} while (pair!=NULL);
 	va_end(narg);
-	kl_sink_this(&rec);
+	kl__sink_this(&rec);
 	kl_record_free(&rec);
 }
 
@@ -118,7 +120,7 @@ void kl_logs_varg(char *key, char *val, ...) {
 		};
 	} while (next!=NULL);
 	va_end(narg);
-	kl_sink_this(&rec);
+	kl__sink_this(&rec);
 	kl_record_free(&rec);
 }
 
