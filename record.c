@@ -34,18 +34,33 @@
 
 #include "kiwi.h"
 
-void kl_record_init(record *a, size_t initial_size) {
-	a->array = (kl_pair **)malloc(initial_size * sizeof(kl_pair));
+#define MAX_RECORD_ITEMS 65535
+
+int kl_record_init(record *a, size_t initial_size) {
+	kl_pair **p = (kl_pair **)malloc(initial_size * sizeof(kl_pair));
+	if (p == NULL) {
+		return -1;
+	}
+	a->array = p;
 	a->used  = 0;
 	a->size  = initial_size;
+	return 0;
 }
 
-void kl_record_append(record *a, kl_pair *pair) {
+int kl_record_append(record *a, kl_pair *pair) {
+	if (a->used > MAX_RECORD_ITEMS) {
+		return -1;
+	}
 	if (a->used == a->size) {
 		a->size *= 2;
-		a->array = (kl_pair **)realloc(a->array, a->size * sizeof(kl_pair *));
+		kl_pair **p = (kl_pair **)realloc(a->array, a->size * sizeof(kl_pair *));
+		if (pair == NULL) {
+			return -1;
+		}
+		a->array = p;
 	}
 	a->array[a->used++] = pair;
+	return 0;
 }
 
 void kl_record_free(record *a) {

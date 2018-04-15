@@ -35,11 +35,22 @@
 #include <stdio.h>
 #include "kiwi.h"
 
-sink *setup_sink (char *fname, ...){
+static sink *sinks[];
+
+static int add_sink(FILE *fd) {
+
 }
+
+sink *kl_create_sink (FILE *fd, ...){
+	va_list options;
+	add_sink(fd);
+}
+
+
 
 // Reset all filters. Starts logging everything to this sink.
 void kl_sink_everything(sink *s) {
+
 }
 
 

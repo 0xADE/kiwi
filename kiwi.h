@@ -44,6 +44,9 @@
    ॐ तारे तुत्तारे तुरे स्व
  */
 
+#ifndef KIWI_H
+#define KIWI_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -108,8 +111,8 @@ typedef struct {
 } record;
 
 /* Internal functions. */
-void kl_record_init(record *a, size_t initial_size);
-void kl_record_append(record *a, kl_pair *pair);
+int kl_record_init(record *a, size_t initial_size);
+int kl_record_append(record *a, kl_pair *pair);
 void kl_record_free(record *a);
 
 /*
@@ -147,7 +150,7 @@ typedef struct {
  * for modifying default sink settings. It could be filtering options
  * or reference to alternative formatter (all options are references
  * to `option` type instances. */
-sink *kl_create_sink(char *fname, ...);
+sink *kl_create_sink(FILE *fd, ...);
 
 /* Change sink settings by adding or removing the filters or changing
  * the output format. Arbitrary number of options could be passed for
@@ -179,3 +182,5 @@ void kl__sink_this(record *rec);
    filter with_irange(char* key, int from, int to);
    filter without_irange(char* key, int from, int to);
 */
+
+#endif

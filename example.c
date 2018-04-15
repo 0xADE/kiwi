@@ -2,6 +2,8 @@
 
 int main(int argc, char *argv[])
 {
+	kl_create_sink(stderr);
+
 	// Just logs key="sample value" key2="another value"
 	kl_log(kl_s("key", "sample value"), kl_s("key2", "another value"));
 
