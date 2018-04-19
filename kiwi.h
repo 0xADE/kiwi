@@ -50,32 +50,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "kiwi-internal.h"
 
-/** Logger interface **
- */
-enum kl_pairval {KL_PAIR_STRING, KL_PAIR_INT, KL_PAIR_FLOAT, KL_PAIR_DOUBLE, KL_PAIR_TIME};
-typedef struct {
-	enum kl_pairval type;
-	char *          key;
-	char *          sval;
-	int             ival;
-	float           fval;
-	double          dval;
-} kl_pair;
-
-/* For avoid varargs limitations each function that allows variadic
- * parameters redefined with NULL at the end. You should use functions
- * from #defines and don't use `_varg` functions!
- */
-void kl_log_varg(kl_pair *kv, ...); // use kl_log() instead!
-void kl_logs_varg(char *key, char *val, ...); // use kl_logs() instead!
+/* Internal data structures used by logger functions but they are not
+ * required for using logger in your application. It is enough use
+ * functions declared in "kiwi.h". So right way is include "kiwi.h"
+ * for using `kiwi` in the application. */
 
 #if __STRICT_ANSI__ // by recipe from https://snai.pe/c/preprocessor/varargs/
- #define kl_log(pair, ...) kl_log_varg(pair, __VA_ARGS__, (kl_pair *)NULL)
- #define kl_logs(k, v, ...) kl_logs_varg(k, v, __VA_ARGS__, (char *)NULL)
+ #define kl_log(pair, ...) kl__log_varg(pair, __VA_ARGS__, (kl_pair *)NULL)
+ #define kl_logs(k, v, ...) kl__logs_varg(k, v, __VA_ARGS__, (char *)NULL)
 #else
- #define kl_log(pair, pairs ...) kl_log_varg(pair, ## pairs, (kl_pair *)NULL)
- #define kl_logs(k, v, pairs ...) kl_logs_varg(k, v, ## pairs, (char *)NULL)
+ #define kl_log(pair, pairs ...) kl__log_varg(pair, ## pairs, (kl_pair *)NULL)
+ #define kl_logs(k, v, pairs ...) kl__logs_varg(k, v, ## pairs, (char *)NULL)
 #endif
 
 /* Helpers for adding key-value pairs to the log record.
@@ -86,7 +73,7 @@ kl_pair *kl_f(char *key, float val);
 kl_pair *kl_d(char *key, double val);
 
 /* Setup timestamp output as additional context for the log records.
- * Second argument is time format. Default format is %H:%M:%S.
+ * Second argument is time kl_format. Default kl_format is %H:%M:%S.
  */
 void kl_with_ts(char *key, ...);
 void kl_without_ts();
@@ -102,85 +89,72 @@ void kl_error(kl_pair *kv, ...);
 void kl_fatal(kl_pair *kv, ...);
 
 /*
-** Log record
-*/
-typedef struct {
-	kl_pair **array;
-	size_t    used;
-	size_t    size;
-} record;
-
-/* Internal functions. */
-int kl_record_init(record *a, size_t initial_size);
-int kl_record_append(record *a, kl_pair *pair);
-void kl_record_free(record *a);
-
-/*
 ** Sink interface
 */
 enum match_type {FILTER_MATCH_KEY, FILTER_RANGE_INT};
 
-typedef struct {
-	enum match_type type;
-	char *          name;
-	char *          val;
-	int             from;
-	int             to;
-} filter;
+typedef struct kl_filter {
+	enum match_type   type;
+	char *            name;
+	char *            val;
+	int               from;
+	int               to;
+	struct kl_filter *prev;
+	struct kl_filter *next;
+} kl_filter;
+
+typedef struct kl_sink {
+	FILE *          fd;
+	kl_filter *     filter_set;
+	struct kl_format *     fmt;
+	struct kl_sink *prev;
+	struct kl_sink *next;
+} kl_sink;
+
+typedef struct kl_format {
+	int (*atstart)(kl_sink *, kl_record *);
+	int (*kl_format)(kl_sink *, kl_record *);
+	int (*atfinish)(kl_sink *, kl_record *);
+} kl_format;
 
 typedef struct {
-	FILE *  fd;
-	filter *filter_set;
-} sink;
+	kl_filter *cond;
+	kl_format *fmt;
+} kl_option;
 
-typedef struct {
-	int (*atstart)(sink *, record *);
-	int (*format)(sink *, record *);
-	int (*atfinish)(sink *, record *);
-} format;
-
-typedef struct {
-	filter *cond;
-	format *fmt;
-	time_t *at;
-} option;
-
-/* Create a new sink. By default the sink will pass everything until
+/* Create a new kl_sink. By default the kl_sink will pass everything until
  * the filters applied. Arbitrary number of options could be passed
- * for modifying default sink settings. It could be filtering options
+ * for modifying default kl_sink settings. It could be filtering options
  * or reference to alternative formatter (all options are references
  * to `option` type instances. */
-sink *kl_create_sink(FILE *fd, ...);
+kl_sink *kl_create_sink(FILE *fd, ...);
 
-/* Change sink settings by adding or removing the filters or changing
- * the output format. Arbitrary number of options could be passed for
- * modifying default sink settings. It could be filtering options or
+/* Change kl_sink settings by adding or removing the filters or changing
+ * the output kl_format. Arbitrary number of options could be passed for
+ * modifying default kl_sink settings. It could be filtering options or
  * reference to alternative formatter (all options are references to
  * `option` type instances. */
-void kl_modify_sink(sink *s, ...);
+void kl_modify_sink(kl_sink *s, ...);
 
-/* Reset all the filters for the sink. By default the sink will output
+/* Reset all the filters for the kl_sink. By default the kl_sink will output
  * all passed records. Filtering options will not reset. */
-void kl_sink_everything(sink *s);
+void kl_sink_everything(kl_sink *s);
 
-/* Closes the sink and underlaying file. Return 0 on success or error code. */
-int kl_close_sink(sink *s);
-
-/* Internal function. */
-void kl__sink_this(record *rec);
+/* Closes the kl_sink and underlaying file. Return 0 on success or error code. */
+int kl_close_sink(kl_sink *s);
 
 /*
 ** XXX Sink interface
-   filter must_key(char* key);
-   filter must_sval(char* key, char* val);
-   filter must_irange(char* key, int from, int to);
+   kl_filter must_key(char* key);
+   kl_filter must_sval(char* key, char* val);
+   kl_filter must_irange(char* key, int from, int to);
 
-   filter with_key(char* key);
-   filter without_key(char* key);
-   filter with_sval(char* key, char* val);
-   filter without_sval(char* key, char* sval);
-   filter with_irange(char* key, int from, int to);
-   filter without_irange(char* key, int from, int to);
+   kl_filter with_key(char* key);
+   kl_filter without_key(char* key);
+   kl_filter with_sval(char* key, char* val);
+   kl_filter without_sval(char* key, char* sval);
+   kl_filter with_irange(char* key, int from, int to);
+   kl_filter without_irange(char* key, int from, int to);
 */
 
 #endif

@@ -60,7 +60,7 @@ void kl_without_ts()
 	ts_key = NULL;
 }
 
-static void record_stamp(record *rec)
+static void record_stamp(kl_record *rec)
 {
 	if (ts_key==NULL) return;
 	time_t     t  = time(NULL);
@@ -68,36 +68,36 @@ static void record_stamp(record *rec)
 	char       buf[16];
 	buf[strftime(buf, sizeof(buf), ts_fmt, lt)] = '\0';
 	kl_pair pair = {.type = KL_PAIR_TIME, .key = ts_key, .sval = buf};
-	kl_record_append(rec, &pair);
+	kl__record_append(rec, &pair);
 }
 
 __attribute__((sentinel))
-void kl_log_varg(kl_pair *kv, ...)
+void kl__log_varg(kl_pair *kv, ...)
 {
-	record rec;
-	kl_record_init(&rec, RECORD_INIT_SIZE);
+	kl_record rec;
+	kl__record_init(&rec, RECORD_INIT_SIZE);
 	record_stamp(&rec);
 	va_list narg;
 	va_start(narg, kv);
 	kl_pair *pair = kv;
 	do
 	{
-		kl_record_append(&rec, pair);
+		kl__record_append(&rec, pair);
 		pair = va_arg(narg, kl_pair *);
 	} while (pair!=NULL);
 	va_end(narg);
 	kl__sink_this(&rec);
-	kl_record_free(&rec);
+	kl__record_free(&rec);
 }
 
 /* kl_logs() allows use pairs with both string key and value without
  * wrapping them with kl_s(). It assumes that only string values
- * passed to the log record.
+ * passed to the log kl_record.
  */
 __attribute__((sentinel))
-void kl_logs_varg(char *key, char *val, ...) {
-	record rec;
-	kl_record_init(&rec, RECORD_INIT_SIZE);
+void kl__logs_varg(char *key, char *val, ...) {
+	kl_record rec;
+	kl__record_init(&rec, RECORD_INIT_SIZE);
 	record_stamp(&rec);
 	va_list narg;
 	va_start(narg, val);
@@ -106,7 +106,7 @@ void kl_logs_varg(char *key, char *val, ...) {
 	char *  next;
 	do
 	{
-		kl_record_append(&rec, &pair);
+		kl__record_append(&rec, &pair);
 		next = va_arg(narg, char *);
 		if (count++%2==0) {
 			/* Even argument is key. */
@@ -121,7 +121,7 @@ void kl_logs_varg(char *key, char *val, ...) {
 	} while (next!=NULL);
 	va_end(narg);
 	kl__sink_this(&rec);
-	kl_record_free(&rec);
+	kl__record_free(&rec);
 }
 
 /* Helper that accepts value of the pair as string (char*). This

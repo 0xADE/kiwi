@@ -35,24 +35,98 @@
 #include <stdio.h>
 #include "kiwi.h"
 
-static sink *sinks[];
-
-static int add_sink(FILE *fd) {
-
+static kl_sink *top_sink;
+/* It adds the new kl_sink to the set if the fd not found in the sinks
+ * array. If the fd have found in the array it will be replaced by the
+ * new one. */
+static int sinks_add(kl_sink *s) {
+	kl_sink *cursor = top_sink;
+	while(cursor!=NULL) {
+		if(cursor->fd==s->fd) {
+			cursor->fd         = s->fd;
+			cursor->filter_set = s->filter_set;
+			return 0;
+		}
+		cursor = cursor->prev;
+	}
+	if (top_sink!=NULL) {
+		top_sink->next = s;
+		s->prev        = top_sink;
+		s->next        = NULL;
+	}
+	top_sink = s;
+	return 0;
 }
 
-sink *kl_create_sink (FILE *fd, ...){
+/* Remove the kl_sink from the set and close associated file. */
+static int sinks_remove(kl_sink *s) {
+	if (top_sink==NULL) return -1;
+	kl_sink *cursor = top_sink;
+	while (cursor!=NULL) {
+		if (cursor->fd==s->fd) {
+			if (cursor->next!=NULL) {
+				cursor->next->prev = cursor->prev;
+			}
+			if (cursor->prev!=NULL) {
+				cursor->prev->next = cursor->next;
+			}
+			fclose(s->fd);
+			free(s);
+			return 0;
+		}
+		cursor = cursor->prev;
+	}
+	return -1;
+}
+
+static kl_sink *sinks_find(kl_sink *s){
+	kl_sink *cursor = top_sink;
+	while (cursor!=NULL) {
+		if (cursor->fd==s->fd) {
+			return cursor;
+		}
+	}
+	return NULL;
+}
+
+kl_sink *kl_create_sink (FILE *fd, ...){
 	va_list options;
-	add_sink(fd);
+	va_start(options, fd);
+	kl_option *opt;
+	kl_sink    sink = {.fd = fd}; // TODO init with default format
+	do
+	{
+		opt = va_arg(options, kl_option *);
+		if (opt==NULL) break;
+		if (opt->cond!=NULL) {
+			// TODO XXX filter_add(sink.filter_set, opt->cond)
+		}
+		if (opt->fmt!=NULL) {
+			sink.fmt = opt->fmt;
+		}
+	} while (opt!=NULL);
+	va_end(options);
+	sinks_add(&sink);
 }
 
-
-
-// Reset all filters. Starts logging everything to this sink.
-void kl_sink_everything(sink *s) {
-
+void kl_modify_sink(kl_sink *s, ...) {
+	va_list options;
+	va_start(options, s);
+	kl_option *opt;
+	do
+	{
+		opt = va_arg(options, kl_option *);
+	} while (opt!=NULL);
+	va_end(options);
 }
 
+// Reset all filters. Starts logging everything to this kl_sink.
+void kl_sink_everything(kl_sink *s) {
+	kl_sink *kl_sink;
+	if ((kl_sink = sinks_find(s))!=NULL) {
+		kl_sink->filter_set = NULL; // FIXME нужно ли здесь освободить память от фильтров?
+	};
+}
 
 // XXX remove it
 static void add_to_record (kl_pair *kv){
@@ -76,7 +150,7 @@ static void add_to_record (kl_pair *kv){
 	}
 }
 
-void kl__sink_this(record *rec) {
+void kl__sink_this(kl_record *rec) {
 	// создается копия со списком синков (1)
 	// создается пустой массив под активные выходы (2)
 	for (int i = 0; i<rec->used; i++) {

@@ -32,40 +32,46 @@
    ॐ तारे तुत्तारे तुरे स्व
  */
 
-#include "kiwi.h"
+/* Internal data structures used by logger functions but they are not
+ * required for using logger in your application. It is enough use
+ * functions declared in "kiwi.h". So right way is include "kiwi.h"
+ * for using `kiwi` in the application. Anyway due library logic the
+ * "kiwi-internal.h" will be included implicitely. */
 
-#define MAX_RECORD_ITEMS 65535
+/** Logger interface **
+ */
+enum kl_pairval {KL_PAIR_STRING, KL_PAIR_INT, KL_PAIR_FLOAT, KL_PAIR_DOUBLE, KL_PAIR_TIME};
+typedef struct {
+	enum kl_pairval type;
+	char *          key;
+	char *          sval;
+	int             ival;
+	float           fval;
+	double          dval;
+} kl_pair;
 
-int kl__record_init(kl_record *a, size_t initial_size) {
-	kl_pair **p = (kl_pair **)malloc(initial_size * sizeof(kl_pair));
-	if (p == NULL) {
-		-1;
-	}
-	a->array = p;
-	a->used  = 0;
-	a->size  = initial_size;
-	0;
-}
+/* For avoid varargs limitations each function that allows variadic
+ * parameters redefined with NULL at the end. You should use functions
+ * from #defines and don't use `_varg` functions!
+ */
+void kl__log_varg(kl_pair *kv, ...); // use kl_log() instead!
+void kl__logs_varg(char *key, char *val, ...); // use kl_logs() instead!
 
-int kl__record_append(kl_record *a, kl_pair *pair) {
-	if (a->used > MAX_RECORD_ITEMS) {
-		-1;
-	}
-	if (a->used == a->size) {
-		a->size *= 2;
-		kl_pair **p = (kl_pair **)realloc(a->array, a->size * sizeof(kl_pair *));
-		if (pair == NULL) {
-			-1;
-		}
-		a->array = p;
-	}
-	a->array[a->used++] = pair;
-	0;
-}
+/*
+** Log record
+*/
+typedef struct {
+	kl_pair **array;
+	size_t    used;
+	size_t    size;
+	time_t *  at;
+} kl_record;
 
-void kl__record_free(kl_record *a) {
-	// TODO free all pairs in the array!
-	free(a->array);
-	a->array = NULL;
-	a->used  = a->size = 0;
-}
+int kl__record_init(kl_record *a, size_t initial_size);
+int kl__record_append(kl_record *a, kl_pair *pair);
+void kl__record_free(kl_record *a);
+
+/* Internal function. */
+void kl__sink_this(kl_record *rec);
+
+
