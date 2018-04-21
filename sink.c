@@ -47,12 +47,10 @@ static int sinks_add(kl_sink *s) {
 			cursor->filter_set = s->filter_set;
 			return 0;
 		}
-		cursor = cursor->prev;
+		cursor = cursor->linked;
 	}
 	if (top_sink!=NULL) {
-		top_sink->next = s;
-		s->prev        = top_sink;
-		s->next        = NULL;
+		s->linked = top_sink;
 	}
 	top_sink = s;
 	return 0;
@@ -62,19 +60,18 @@ static int sinks_add(kl_sink *s) {
 static int sinks_remove(kl_sink *s) {
 	if (top_sink==NULL) return -1;
 	kl_sink *cursor = top_sink;
+	kl_sink *prev_cursor;
 	while (cursor!=NULL) {
 		if (cursor->fd==s->fd) {
-			if (cursor->next!=NULL) {
-				cursor->next->prev = cursor->prev;
-			}
-			if (cursor->prev!=NULL) {
-				cursor->prev->next = cursor->next;
+			if (prev_cursor!=NULL) {
+				prev_cursor->linked = cursor->linked;
 			}
 			fclose(s->fd);
 			free(s);
 			return 0;
 		}
-		cursor = cursor->prev;
+		prev_cursor = cursor;
+		cursor      = cursor->linked;
 	}
 	return -1;
 }
@@ -85,6 +82,7 @@ static kl_sink *sinks_find(kl_sink *s){
 		if (cursor->fd==s->fd) {
 			return cursor;
 		}
+		cursor = cursor->linked;
 	}
 	return NULL;
 }

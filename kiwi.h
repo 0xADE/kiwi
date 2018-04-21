@@ -104,18 +104,23 @@ typedef struct kl_filter {
 } kl_filter;
 
 typedef struct kl_sink {
-	FILE *          fd;
-	kl_filter *     filter_set;
-	struct kl_format *     fmt;
-	struct kl_sink *prev;
-	struct kl_sink *next;
+	FILE *            fd;
+	kl_filter *       filter_set;
+	struct kl_format *fmt;
+	struct kl_sink *  linked;
 } kl_sink;
 
+/* Formatting
+ */
 typedef struct kl_format {
-	int (*atstart)(kl_sink *, kl_record *);
-	int (*kl_format)(kl_sink *, kl_record *);
-	int (*atfinish)(kl_sink *, kl_record *);
+	int (*start)(FILE *, kl_record *); // at start of the record
+	int (*pair)(FILE *, kl_pair *); // format single pair
+	int (*finish)(FILE *, kl_record *); // at the end of the record
 } kl_format;
+
+int *kl_logfmt_start(FILE *, kl_record *);
+int *kl_logfmt_pair(FILE *, kl_pair *);
+int *kl_logfmt_finish(FILE *, kl_record *);
 
 typedef struct {
 	kl_filter *cond;
