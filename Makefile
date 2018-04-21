@@ -24,6 +24,6 @@ example-debug: ${OBJ}
 	gcc ${DEBUG} ${CFLAGS} ${LDFLAGS} -o $@ $^
 
 clean:
-	rm -f example example-debug *.d ${SRC}/*.o
+	rm -f example example-debug *.d ${SRCDIR}/*.o ${SRCDIR}/*.d
 
 -include $(DEPS)

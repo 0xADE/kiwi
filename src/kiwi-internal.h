@@ -38,6 +38,8 @@
  * for using `kiwi` in the application. Anyway due library logic the
  * "kiwi-internal.h" will be included implicitely. */
 
+#include <stdlib.h>
+
 /** Logger interface **
  */
 enum kl_pairval {KL_PAIR_STRING, KL_PAIR_INT, KL_PAIR_FLOAT, KL_PAIR_DOUBLE, KL_PAIR_TIME};
